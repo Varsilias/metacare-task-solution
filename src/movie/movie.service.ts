@@ -1,16 +1,10 @@
-import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { CreateMovieDto } from './dto/create-movie.dto';
-import { UpdateMovieDto } from './dto/update-movie.dto';
-import { AxiosResponse } from 'axios';
-import { Observable } from 'rxjs';
-import { Movie } from './interfaces/movie.interface';
-import { map } from 'rxjs/operators'
-import { firstValueFrom } from 'rxjs';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { SwapiService } from './swapi/swapi.service';
 import { CommentsService } from '../comments/comments.service';
+import { HttpStatus, HttpException } from '@nestjs/common';
+import { Character } from './interfaces/character.interface';
+
 
 @Injectable()
 export class MovieService {
@@ -25,31 +19,40 @@ export class MovieService {
   async findAll() {
     const movies = await this.swapiService.getMovies();
     const moviesWithCommentCount = await Promise.all(movies.map(async ({title, opening_crawl, release_date, created, url}) => {
-      const movieId = url.split('/')[5]
-      const commentCount = await this.commentService.getTotalCommentCount(+movieId)
+        const movieId = url.split('/')[5]
+        const commentCount = await this.commentService.getTotalCommentCount(+movieId)
 
-      return {
-        movieId: +movieId,
-        title,
-        opening_crawl,
-        release_date,
-        commentCount,
-        createdAt: created
-      }
-    })
-);
+        return {
+          movieId: +movieId,
+          title,
+          opening_crawl,
+          release_date,
+          commentCount,
+          createdAt: created
+        }
+      })
+  );
     return moviesWithCommentCount
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} movie`;
+  async getMovieCharacters(movieId: number) {
+    const movies = await this.swapiService.getMovies();
+    const foundMovie = movies.find((movie) => {
+      const remoteMovieId = movie.url.split('/')[5]
+      return movieId == +remoteMovieId
+    })
+
+    if(!foundMovie) {
+      throw new HttpException("Movie Not Found", HttpStatus.NOT_FOUND)
+      
+    }
+    const characters = await this.swapiService.getCharacterDetails(foundMovie.characters);
+    const characterArray = characters.map((character: Character) => {
+      const { homeworld, films, species, vehicles, starships, url, ...rest } = character
+      return rest;
+    })
+
+    return characterArray;
   }
 
-  update(id: number, updateMovieDto: UpdateMovieDto) {
-    return `This action updates a #${id} movie`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} movie`;
-  }
 }

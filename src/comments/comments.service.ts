@@ -20,18 +20,6 @@ export class CommentsService {
     return `This action returns all comments`;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} comment`;
-  }
-
-  update(id: number, updateCommentDto: UpdateCommentDto) {
-    return `This action updates a #${id} comment`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} comment`;
-  }
-
  async getTotalCommentCount(filmId: number): Promise<number> {
    const commentCount = await this.commentsRepository
                             .createQueryBuilder('comment')
