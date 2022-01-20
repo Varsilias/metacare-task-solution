@@ -31,4 +31,9 @@ export class CommentsController {
   remove(@Param('id') id: string) {
     return this.commentsService.remove(+id);
   }
+
+  @Get('/count/:id')
+  getCommentCount(@Param('id') id: string) {
+    return this.commentsService.getTotalCommentCount(+id)
+  }
 }
