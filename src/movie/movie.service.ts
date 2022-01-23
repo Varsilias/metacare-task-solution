@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { SwapiService } from './swapi/swapi.service';
 import { CommentsService } from '../comments/comments.service';
 import { HttpStatus, HttpException } from '@nestjs/common';
-import { Character } from './interfaces/character.interface';
+import { Character, TransformedCharacter } from './interfaces/character.interface';
 import { CreateCommentDto } from '../comments/dto/create-comment.dto'
 
 
@@ -19,19 +19,14 @@ export class MovieService {
   }
 
   async getCommentsByMovieId(movieId: number) {
-    const comments = await this.commentService.getCommentsById(movieId)
-    if (comments === []) {
-      throw new HttpException('No comments for movie with this ID', HttpStatus.NOT_FOUND);
-    } else {
-      return comments;
-    }
-
+    return await this.commentService.getCommentsById(movieId)
   }
 
   async getMovies() {
     const movies = await this.swapiService.getMovies();
+
     const moviesWithCommentCount = await Promise.all(movies.map(async ({title, opening_crawl, release_date, created, url}) => {
-        const movieId = url.split('/')[5]
+        const movieId = this.getMovieIdFromUrl(url)
         const commentCount = await this.commentService.getTotalCommentCount(+movieId)
 
         return {
@@ -44,6 +39,7 @@ export class MovieService {
         }
       })
   );
+  
     return moviesWithCommentCount
   }
 
@@ -51,7 +47,8 @@ export class MovieService {
     const movies = await this.swapiService.getMovies();
 
     const foundMovie = movies.find((movie) => {
-      const remoteMovieId = movie.url.split('/')[5]
+      const { url } = movie;
+      const remoteMovieId = this.getMovieIdFromUrl(url)
       return movieId == +remoteMovieId
     })
 
@@ -68,4 +65,36 @@ export class MovieService {
     return characterArray;
   }
 
+  async getFilteredCharacters(characters: TransformedCharacter[], filterValue: string) {
+    const filteredCharacter = characters.filter((character) => {
+          return character.gender == filterValue;
+        })
+        
+        let totalHeight = 0
+
+        filteredCharacter.forEach((character) => {
+          if (character.height == 'unknown' || character.height == 'none') {
+            totalHeight = totalHeight + 0
+          } else {
+            totalHeight = totalHeight + Number(character.height)
+          }
+        })
+        
+        const convertibleHeight = totalHeight / 30;
+        const totalHeightInFeet = Math.floor(convertibleHeight)
+        const totalHeightInches = ((convertibleHeight - totalHeightInFeet) * 10).toFixed(2)
+
+        return {
+          metadata: {
+            totalCharacters: filteredCharacter.length,
+            "total height in CM": `${totalHeight}cm`,
+            "total height in feet/inches": `${totalHeightInFeet}ft ${totalHeightInches}inches`
+          },
+          characters: filteredCharacter
+        };
+  }
+
+  private getMovieIdFromUrl(url: string) {
+    return url.split('/')[5]
+  }
 }
