@@ -7,7 +7,7 @@ export class Comment {
     @PrimaryGeneratedColumn()
     id: number; 
 
-    @Factory(() => randomInt(1, 7)) 
+    @Factory(() => randomInt(1, 8)) 
     @Column()
     filmId: number;
 
