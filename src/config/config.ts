@@ -17,9 +17,9 @@ export const Config = () => ({
         // migrations: ["dist/migrations/*{.ts,.js}"],
         // migrationsTableName: "migrations_typeorm",
         // migrationsRun: JSON.parse(process.env.MIGRATION_RUN),
-        // url: process.env.DATABASE_URL,
-        // ssl: {
-        //     rejectUnauthorized: false,
-        //  },
+        url: process.env.DATABASE_URL,
+        ssl: {
+            rejectUnauthorized: false,
+         },
     }
 });
